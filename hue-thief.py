@@ -91,7 +91,10 @@ async def steal(device_path, baudrate, scan_channel):
 
         await asyncio.sleep(1)
 
-        print(f"Found the following targets scanning channel {channel}.\n {targets}")
+        if targets:
+            print(f"Found the following targets scanning channel {channel}.\n {targets}")
+        else:
+            print(f"Found no targets on {channel}")
 
         while len(targets)>0:
             target = targets.pop()
