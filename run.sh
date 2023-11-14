@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-set -eux
+set -eu
 
 echo "Hello, World!"
 
