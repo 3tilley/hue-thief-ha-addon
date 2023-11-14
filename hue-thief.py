@@ -35,6 +35,8 @@ async def steal(device_path, baudrate, scan_channel):
     DLT_IEEE802_15_4 = 195
     pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
     #prompt = Prompt()
+    transactions_sent = []
+    transactions_received = []
 
 
     def dump_pcap(frame):
@@ -48,7 +50,7 @@ async def steal(device_path, baudrate, scan_channel):
     def handle_incoming(frame_name, response):
         print("Got incoming data")
         print(f"Frame name: {frame_name}")
-        print(f"Response:\n{response}")
+        #print(f"Response:\n{response}")
 
         if frame_name != "mfglibRxHandler":
             return
@@ -64,8 +66,11 @@ async def steal(device_path, baudrate, scan_channel):
             resp = interpanZll.ScanResp.deserialize(data)[0]
         except ValueError:
             return
+
+        transactions_received.append(resp.transactionId)
+
         if resp.transactionId != transaction_id: # Not for us
-            print(f"{resp.transactionId} != {transaction_id}, this isn't a response to us")
+            print(f"{resp.transactionId} != {transaction_id}, this isn't a response to us.\nResponse:{resp}")
             return
 
         targets.add(resp.extSrc)
@@ -93,6 +98,7 @@ async def steal(device_path, baudrate, scan_channel):
         ).serialize()
         dump_pcap(frame)
         res = await dev.mfglibSendPacket(frame)
+        transactions_sent.append(transaction_id)
         print(f"Sent packet: {res}")
         util.check(res[0], "Unable to send packet")
 
@@ -133,6 +139,9 @@ async def steal(device_path, baudrate, scan_channel):
                 dump_pcap(frame)
                 await dev.mfglibSendPacket(frame)
                 await asyncio.sleep(1)
+
+    print(f"Sent: {sorted(transactions_sent)}")
+    print(f"Received: {sorted(transactions_received)}")
 
     dev.remove_callback(cbid)
 
