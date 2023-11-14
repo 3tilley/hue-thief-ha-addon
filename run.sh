@@ -3,8 +3,15 @@
 set -eux
 
 echo "Hello, World!"
-DEVICE="$(bashio::config 'device')"
-BAUD_RATE="$(bashio::config 'baud_rate')"
+
+
+CONFIG_PATH=/data/options.json
+
+echo "Found the following in a config file"
+cat ${CONFIG_PATH}
+
+DEVICE=$(bashio::config 'device')
+BAUD_RATE=$(bashio::config 'baud_rate')
 
 
 #(cd hue-thief && python3 -c "import hue_thief; print(hue-thief)")
