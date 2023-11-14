@@ -91,8 +91,12 @@ async def steal(device_path, baudrate, scan_channel):
 
         await asyncio.sleep(1)
 
+        print(f"Found the following targets scanning channel {channel}.\n {targets}")
+
         while len(targets)>0:
             target = targets.pop()
+            print(f"Sending flashing identifier packet to {target}")
+
             frame = interpanZll.IdentifyReq(
                 seq = 2,
                 srcPan = 0,
