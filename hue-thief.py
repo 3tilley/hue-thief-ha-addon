@@ -57,6 +57,7 @@ async def steal(device_path, baudrate, scan_channel):
         dump_pcap(data)
 
         if len(data)<10: # Not sure what this is, but not a proper response
+            print(f"Got some data, but given data len {len(data)} < 10, it's not a proper response")
             return
 
         try:
@@ -64,6 +65,7 @@ async def steal(device_path, baudrate, scan_channel):
         except ValueError:
             return
         if resp.transactionId != transaction_id: # Not for us
+            print(f"{resp.transactionId} != {transaction_id}, this isn't a response to us")
             return
 
         targets.add(resp.extSrc)
