@@ -34,7 +34,7 @@ async def steal(device_path, baudrate, scan_channel):
 
     DLT_IEEE802_15_4 = 195
     pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
-    prompt = Prompt()
+    #prompt = Prompt()
 
 
     def dump_pcap(frame):
