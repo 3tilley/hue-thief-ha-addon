@@ -46,6 +46,10 @@ async def steal(device_path, baudrate, scan_channel):
 
 
     def handle_incoming(frame_name, response):
+        print("Got incoming data")
+        print(f"Frame name: {frame_name}")
+        print(f"Response:\n{response}")
+
         if frame_name != "mfglibRxHandler":
             return
 
@@ -87,9 +91,10 @@ async def steal(device_path, baudrate, scan_channel):
         ).serialize()
         dump_pcap(frame)
         res = await dev.mfglibSendPacket(frame)
+        print(f"Sent packet: {res}")
         util.check(res[0], "Unable to send packet")
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
 
         if targets:
             print(f"Found the following targets scanning channel {channel}.\n {targets}")
