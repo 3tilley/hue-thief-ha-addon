@@ -127,10 +127,11 @@ async def steal(device_path, baudrate, scan_channel):
     dev.close()
 
 
-parser = argparse.ArgumentParser(description='Factory reset a Hue light bulb.')
-parser.add_argument('device', type=str, help='Device path, e.g., /dev/ttyUSB0')
-parser.add_argument('-b', '--baudrate', type=int, default=57600, help='Baud rate (default: 57600)')
-parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
-args = parser.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Factory reset a Hue light bulb.')
+    parser.add_argument('device', type=str, help='Device path, e.g., /dev/ttyUSB0')
+    parser.add_argument('-b', '--baudrate', type=int, default=57600, help='Baud rate (default: 57600)')
+    parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
+    args = parser.parse_args()
 
-asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel))
+    asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel))
