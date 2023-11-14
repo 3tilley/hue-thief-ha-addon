@@ -103,7 +103,8 @@ async def steal(device_path, baudrate, scan_channel):
             ).serialize()
             dump_pcap(frame)
             await dev.mfglibSendPacket(frame)
-            answer = await prompt("Do you want to factory reset the light that just blinked? [y|n] ")
+            #answer = await prompt("Do you want to factory reset the light that just blinked? [y|n] ")
+            answer = "n"
 
             if answer.strip().lower() == "y":
                 print("Factory resetting "+str(target))
