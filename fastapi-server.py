@@ -1,5 +1,5 @@
 import asyncio
-from lits import App, Route
+from litestar import App, Route
 from pydantic import BaseModel
 
 from hue_thief import steal, identify_bulb, send_reset, prepare_config
