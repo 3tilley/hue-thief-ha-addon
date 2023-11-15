@@ -6,6 +6,7 @@ import argparse
 from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from pydantic import BaseModel
 
+import hue_thief
 from hue_thief import steal, identify_bulb, send_reset, prepare_config
 
 app = FastAPI()

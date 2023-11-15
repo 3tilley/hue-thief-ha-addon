@@ -167,11 +167,11 @@ async def identify_bulb(dev, eui64, target, transaction_id, channel):
     dump_pcap(frame)
     await dev.mfglibSendPacket(frame)
 
-async def send_reset(dev, eui64, transaction_id, channel)
+async def send_reset(dev, eui64, transaction_id, channel):
     res = await dev.mfglibSetChannel(channel)
     util.check(res[0], "Unable to set channel")
 
-    print(f"Factory resetting {target}"))
+    print(f"Factory resetting {target}")
     frame = interpanZll.FactoryResetReq(
         seq = 3,
         srcPan = 0,
