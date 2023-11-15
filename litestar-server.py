@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import sys
 from dataclasses import dataclass
@@ -81,14 +82,13 @@ class BulbRoutes(Controller):
             result = send_reset(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
         return litestar.Response(status_code=200, content="Reset bulb")
 
-def get_db_connection(app: Litestar) -> tuple:
-    """Returns the db engine.
+def make_config(device_path, baudrate):
+    def get_db_connection(app: Litestar) -> tuple:
+        if not getattr(app.state, "radio_config", None):
+            app.state.radio_config = prepare_config(device_path, baudrate)
+        return app.state.radio_config
 
-    If it doesn't exist, creates it and saves it in on the application state object
-    """
-    if not getattr(app.state, "radio_config", None):
-        app.state.radio_config = prepare_config()
-    return app.state.radio_config
+    return get_db_connection
 
 
 async def close_db_connection(app: Litestar) -> None:
@@ -108,9 +108,14 @@ async def index()  -> str:
 # Run the LiteStar application
 if __name__ == "__main__":
     import uvicorn
+    parser = argparse.ArgumentParser(description='Factory reset a Hue light bulb.')
+    parser.add_argument('device', type=str, help='Device path, e.g., /dev/ttyUSB0')
+    parser.add_argument('-b', '--baudrate', type=int, default=57600, help='Baud rate (default: 57600)')
+    parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
+    args = parser.parse_args()
 
     app = Litestar(debug=True, route_handlers=[BulbRoutes, index],
-                   on_startup=[get_db_connection],
+                   on_startup=[make_config(args.device, args.baudrate)],
                    on_shutdown=[close_db_connection],
                    template_config=TemplateConfig(
                        directory=Path("."),
