@@ -13,7 +13,7 @@ RUN pip3 install -r requirements.txt
 
 RUN mkdir /hue-thief
 COPY run.sh /hue-thief/.
-COPY hue-thief.py /hue-thief/.
+COPY hue_thief.py /hue-thief/.
 COPY interpanZll.py /hue-thief/.
 COPY litestar-server.py /hue-thief/.
 COPY index.html /hue-thief/.
