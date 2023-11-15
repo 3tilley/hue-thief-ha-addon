@@ -28,3 +28,5 @@ fi
 #python3 bellows devices
 
 python3 hue-thief/hue-thief.py ${DEVICE} -b ${BAUD_RATE}
+
+python3 -m http.server 8000

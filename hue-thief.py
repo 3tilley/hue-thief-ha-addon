@@ -1,4 +1,5 @@
 import asyncio
+import json
 import pure_pcapy
 import time
 import sys
@@ -37,6 +38,8 @@ async def steal(device_path, baudrate, scan_channel):
     #prompt = Prompt()
     transactions_sent = []
     transactions_received = []
+    valid_responses = []
+    invalid_responses = []
 
 
     def dump_pcap(frame):
@@ -65,9 +68,13 @@ async def steal(device_path, baudrate, scan_channel):
         try:
             resp = interpanZll.ScanResp.deserialize(data)[0]
         except ValueError:
+            print(f"Unable to deserialise: {resp}")
+            invalid_responses.append(resp)
             return
 
         transactions_received.append(resp.transactionId)
+        resp_dict = resp.__dict__
+        valid_responses.append(resp_dict)
 
         if resp.transactionId != transaction_id: # Not for us
             print(f"{resp.transactionId} != {transaction_id}, this isn't a response to us.\nResponse:{resp}")
@@ -143,11 +150,21 @@ async def steal(device_path, baudrate, scan_channel):
     print(f"Sent: {sorted(transactions_sent)}")
     print(f"Received: {sorted(transactions_received)}")
 
+
     dev.remove_callback(cbid)
 
     await dev.mfglibEnd()
 
     dev.close()
+
+    with open('valid_responses.json', 'w') as fp:
+        json.dump(valid_responses, fp)
+
+    try:
+        with open('invalid_responses.json', 'w') as fp:
+            json.dump(invalid_responses, fp)
+    except Exception as exc:
+        print(f"Unable to write errors: {exc}")
 
 
 if __name__ == "__main__":
