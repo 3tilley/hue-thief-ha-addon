@@ -20,4 +20,5 @@ schema:
 usb: true
 uart: true
 ports:
-  8050/tcp: 8050
+  8099/tcp: 8099
+ingress: true

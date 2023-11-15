@@ -15,7 +15,8 @@ COPY run.sh /
 RUN mkdir /hue-thief
 COPY hue-thief.py /hue-thief/.
 COPY interpanZll.py /hue-thief/.
-COPY fastapi-server.py /hue-thief/.
+COPY litestar-server.py /hue-thief/.
+COPY index.html /hue-thief/.
 
 RUN chmod a+x /run.sh
 

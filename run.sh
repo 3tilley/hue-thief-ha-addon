@@ -27,5 +27,5 @@ fi
 
 #python3 bellows devices
 
-python3 hue-thief/fastapi-server.py ${DEVICE} -b ${BAUD_RATE}
+python3 hue-thief/litestar-server.py ${DEVICE} -b ${BAUD_RATE}
 

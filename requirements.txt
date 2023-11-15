@@ -2,3 +2,4 @@ bellows==0.35.2
 aiohttp>=3.8.2
 litestar
 uvicorn
+jinja2
