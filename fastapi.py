@@ -29,7 +29,7 @@ class ResetBulbRequest(BaseModel):
 async def list_bulbs():
     async with method_lock:
         try:
-            bulbs = steal(args.device, args.baud_rate, args.channel, reset_prompt=False, clean_up=False, (dev, eui64))  # Pass command-line arguments to the function
+            bulbs = steal(args.device, args.baud_rate, args.channel, reset_prompt=False, clean_up=False, config=(dev, eui64))  # Pass command-line arguments to the function
             return {"bulbs": bulbs}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
