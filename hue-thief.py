@@ -68,8 +68,8 @@ async def steal(device_path, baudrate, scan_channel):
         try:
             resp = interpanZll.ScanResp.deserialize(data)[0]
         except ValueError:
-            print(f"Unable to deserialise: {resp}")
-            invalid_responses.append(resp)
+            print(f"Unable to deserialise: {response}")
+            invalid_responses.append(response)
             return
 
         transactions_received.append(resp.transactionId)
@@ -157,10 +157,12 @@ async def steal(device_path, baudrate, scan_channel):
 
     dev.close()
 
+    print(f"Saving {len(valid_responses)} valid responses")
     with open('valid_responses.json', 'w') as fp:
         json.dump(valid_responses, fp)
 
     try:
+        print(f"Saving {len(invalid_responses)} invalid responses")
         with open('invalid_responses.json', 'w') as fp:
             json.dump(invalid_responses, fp)
     except Exception as exc:
