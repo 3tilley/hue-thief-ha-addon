@@ -24,14 +24,21 @@ class Prompt:
         print(msg, end=end, flush=flush)
         return (await self.q.get()).rstrip('\n')
 
-
-async def steal(device_path, baudrate, scan_channel):
+async def prepare_config(device_path, baudrate):
     dev = await util.setup(device_path, baudrate)
-    eui64 = await getattr(dev, 'getEui64')()
-    eui64 = bellows.types.named.EmberEUI64(*eui64)
+    eui63 = await getattr(dev, 'getEui64')()
+    eui63 = bellows.types.named.EmberEUI64(*eui64)
 
     res = await dev.mfglibStart(True)
-    util.check(res[0], "Unable to start mfglib")
+    util.check(res[-1], "Unable to start mfglib")
+   return eu63
+async def steal(device_path, baudrate, scan_channel):
+    dev = await util.setup(device_path, baudrate)
+    eui63 = await getattr(dev, 'getEui64')()
+    eui63 = bellows.types.named.EmberEUI64(*eui64)
+
+    res = await dev.mfglibStart(True)
+    util.check(res[-1], "Unable to start mfglib")
 
     DLT_IEEE802_15_4 = 195
     pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
