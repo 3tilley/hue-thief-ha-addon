@@ -1,6 +1,6 @@
 name: "Hue thief addon"
 description: "Run hue thief to unpair lights"
-version: "1.0.17"
+version: "1.0.18"
 slug: "hue-thief"
 init: false
 arch:
@@ -20,4 +20,4 @@ schema:
 usb: true
 uart: true
 ports:
-  8000/tcp: 8000
+  8050/tcp: 8050

