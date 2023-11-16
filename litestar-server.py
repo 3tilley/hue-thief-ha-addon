@@ -26,7 +26,7 @@ except ImportError:
         def send_reset(*args, **kwargs):
             pass
 
-        def prepare_config(*args, **kwargs):
+        async def prepare_config(*args, **kwargs):
             return None, None
     else:
         raise
@@ -83,9 +83,9 @@ class BulbRoutes(Controller):
         return litestar.Response(status_code=200, content="Reset bulb")
 
 def make_config(device_path, baudrate):
-    def get_db_connection(app: Litestar) -> tuple:
+    async def get_db_connection(app: Litestar) -> tuple:
         if not getattr(app.state, "radio_config", None):
-            app.state.radio_config = prepare_config(device_path, baudrate)
+            app.state.radio_config = await prepare_config(device_path, baudrate)
         return app.state.radio_config
 
     return get_db_connection
