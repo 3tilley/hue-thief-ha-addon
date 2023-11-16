@@ -31,7 +31,7 @@ async def prepare_config(device_path, baudrate):
 
     res = await dev.mfglibStart(True)
     util.check(res[0], "Unable to start mfglib")
-    return (dev, eui63)
+    return (dev, eui64)
 
 async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_up=True, config=None):
     if config:
