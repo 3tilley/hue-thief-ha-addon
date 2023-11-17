@@ -115,6 +115,8 @@ def make_config(device_path, baudrate):
     async def get_db_connection(app: Litestar) -> tuple:
         if not getattr(app.state, "radio_config", None):
             app.state.radio_config = await prepare_config(device_path, baudrate)
+        app.state.device_path = device_path
+        app.state.baud_rate = baudrate
         return app.state.radio_config
 
     return get_db_connection
@@ -130,9 +132,10 @@ async def close_db_connection(app: Litestar) -> None:
 
 
 @get("/", media_type=MediaType.HTML)
-async def index()  -> str:
+async def index(state: State)  -> str:
     index = Path(__file__).parent / "index.html"
-    return index.read_text()
+
+    return index.read_text().replace("{{ fake-jinja-device }}", state.device_path).replace("{{ fake-jinja-baud-rate }}", str(state.baud_rate))
 
 # Run the LiteStar application
 if __name__ == "__main__":
