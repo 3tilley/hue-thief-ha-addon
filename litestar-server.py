@@ -7,23 +7,30 @@ import os
 
 import litestar.exceptions
 from litestar import Litestar, get, post, Controller, MediaType
+from litestar.contrib.htmx.request import HTMXRequest
+from litestar.contrib.htmx.response import Reswap, HTMXTemplate
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
-from litestar.response import Template
 from litestar.template import TemplateConfig
+import yattag
+import pydantic
 
 # Generate skeletons for Windows only
 try:
     from hue_thief import steal, identify_bulb, send_reset, prepare_config
 except ImportError:
     if os.name == "nt":
-        def steal(*args, **kwargs):
-            return set([("abc", "TRANSID", "11")])
+        async def steal(*args, **kwargs):
+            await asyncio.sleep(2)
+            # return set([("abc", "TRANSID", "11")])
+            return set()
 
-        def identify_bulb(*args, **kwargs):
+        async def identify_bulb(*args, **kwargs):
+            await asyncio.sleep(2)
             pass
 
-        def send_reset(*args, **kwargs):
+        async def send_reset(*args, **kwargs):
+            await asyncio.sleep(2)
             pass
 
         async def prepare_config(*args, **kwargs):
@@ -35,12 +42,14 @@ except ImportError:
 # Pydantic models for request parameters
 @dataclass
 class IdentifyBulbRequest:
+# class IdentifyBulbRequest(pydantic.BaseModel):
     address: str
     transaction_id: str
     channel: int
 
 @dataclass
-class ResetBulbRequest:
+class ResetBulbRequest(pydantic.BaseModel):
+# class ResetBulbRequest:
     address: str
     transaction_id: str
     channel: int
@@ -48,6 +57,7 @@ class ResetBulbRequest:
 
 @dataclass
 class Bulb:
+# class Bulb(pydantic.BaseModel):
     address: str
     transaction_id: str
     channel: int
@@ -60,27 +70,45 @@ class BulbsResponse:
 # Class for handling all bulb routes
 class BulbRoutes(Controller):
     method_lock = asyncio.Lock()
+
+    async def bulbs(self, state: State, channel: int | None) -> BulbsResponse:
+        async with self.method_lock:
+            bulbs = await steal(state.radio_config[0], state.radio_config[1], channel, reset_prompt=False, clean_up=False)
+            res = BulbsResponse(bulbs=[Bulb(address=bulb[0], transaction_id=bulb[1], channel=bulb[2]) for bulb in bulbs])
+            return res
+
     @get("/bulbs")
     async def get_bulbs(self, state: State, channel: int | None) -> BulbsResponse:
-        async with self.method_lock:
-            try:
-                bulbs = steal(state.radio_config[0], state.radio_config[1], channel, reset_prompt=False, clean_up=False)
-                res = BulbsResponse(bulbs=[Bulb(address=bulb[0], transaction_id=bulb[1], channel=bulb[2]) for bulb in bulbs])
-                return res
-            except Exception as e:
-                raise litestar.exceptions.HTTPException from e
+        try:
+            return await self.bulbs(state, channel)
+        except Exception as e:
+            raise litestar.exceptions.HTTPException from e
+
+    @get("/bulbs_htmx")
+    async def get_bulbs_htmx(self, state: State, channel: int | None) -> Reswap:
+        bulbs = await self.bulbs(state, channel)
+        template = HTMXTemplate(template_name="bulb_table.html", context={"bulbs": bulbs.bulbs}, re_swap="InnerHTML", re_target="bulbs-content")
+        return template
+
 
     @post("/identify_bulb")
-    async def post_identify_bulb(self, state: State, data: IdentifyBulbRequest) -> None:
+    async def identify_bulb(self, state: State, data: IdentifyBulbRequest) -> None:
         async with self.method_lock:
-            result = identify_bulb(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+            result = await identify_bulb(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+        return litestar.Response(status_code=200, content="Flashing bulb")
+
+    @post("/identify_bulb_htmx")
+    async def identify_bulb_htmx(self, state: State, data: IdentifyBulbRequest) -> None:
+        async with self.method_lock:
+            result = await identify_bulb(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+
         return litestar.Response(status_code=200, content="Flashing bulb")
 
     @post("/reset_bulb")
     async def post_reset_bulb(self, state: State, data: ResetBulbRequest) -> None:
         async with self.method_lock:
-            result = send_reset(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
-        return litestar.Response(status_code=200, content="Reset bulb")
+            result = await send_reset(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+        return litestar.Response(status_code=200, content="Bulb reset")
 
 def make_config(device_path, baudrate):
     async def get_db_connection(app: Litestar) -> tuple:
@@ -118,7 +146,7 @@ if __name__ == "__main__":
                    on_startup=[make_config(args.device, args.baudrate)],
                    on_shutdown=[close_db_connection],
                    template_config=TemplateConfig(
-                       directory=Path("."),
+                       directory=Path("templates"),
                        engine=JinjaTemplateEngine,
                    ),
                 )

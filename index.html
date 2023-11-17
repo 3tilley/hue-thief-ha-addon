@@ -53,6 +53,28 @@
             {{/data.bulbs}}
         </template>
     </div>
+    <h1>HTMX version</h1>
+    <button hx-get="/bulbs_htmx"
+            hx-disabled-elt="this"
+            hx-target="#bulbs-content"
+            placeholder="Loading..."
+    >
+        Get Bulbs
+    </button>
+    <table>
+
+        <thead>
+        <tr>
+            <th>Address</th>
+            <th>Transaction ID</th>
+            <th>Channel</th>
+            <th>Identify</th>
+            <th>Reset</th>
+        </tr>
+        </thead>
+        <tbody id="bulbs-content">    </tbody>
+
+    </table>
 </main>
 </body>
 </html>
