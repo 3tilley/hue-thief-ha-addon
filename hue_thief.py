@@ -47,7 +47,7 @@ async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_u
     valid_responses = []
     invalid_responses = []
 
-    channel_list = [scan_channel] if scan_channel else list(range(11, 27)).reversed()
+    channel_list = [scan_channel] if scan_channel else list(range(11, 27)).reverse()
     channel = None
 
 
