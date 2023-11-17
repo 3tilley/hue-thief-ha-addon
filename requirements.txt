@@ -3,3 +3,4 @@ aiohttp>=3.8.2
 litestar
 uvicorn
 jinja2
+pydantic

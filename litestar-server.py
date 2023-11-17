@@ -13,6 +13,8 @@ from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
 from litestar.template import TemplateConfig
 
+import pydantic
+
 # Generate skeletons for Windows only
 try:
     from hue_thief import steal, identify_bulb, send_reset, prepare_config
@@ -38,24 +40,24 @@ except ImportError:
 
 
 # Pydantic models for request parameters
-@dataclass
-class IdentifyBulbRequest:
-# class IdentifyBulbRequest(pydantic.BaseModel):
+# @dataclass
+# class IdentifyBulbRequest:
+class IdentifyBulbRequest(pydantic.BaseModel):
     address: str
     transaction_id: int
     channel: int
 
-@dataclass
-class ResetBulbRequest:
-# class ResetBulbRequest(pydantic.BaseModel):
+# @dataclass
+# class ResetBulbRequest:
+class ResetBulbRequest(pydantic.BaseModel):
     address: str
     transaction_id: int
     channel: int
 
 
-@dataclass
-class Bulb:
-# class Bulb(pydantic.BaseModel):
+# @dataclass
+# class Bulb:
+class Bulb(pydantic.BaseModel):
     address: str
     transaction_id: int
     channel: int
@@ -99,6 +101,7 @@ class BulbRoutes(Controller):
     async def identify_bulb_htmx(self, state: State, data: IdentifyBulbRequest) -> None:
         async with self.method_lock:
             result = await identify_bulb(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+            # result = await identify_bulb(state.radio_config[0], state.radio_config[1], "fdsfds", data.transaction_id, data.channel)
 
         return litestar.Response(status_code=200, content="Flashing bulb")
 
