@@ -151,5 +151,6 @@ if __name__ == "__main__":
                        engine=JinjaTemplateEngine,
                    ),
                 )
+    print(f"Running server with {args.device} at {args.baudrate} baudrate")
 
     uvicorn.run(app, host="0.0.0.0", port=8099)
