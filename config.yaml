@@ -1,6 +1,6 @@
 name: "Hue thief addon"
 description: "Run hue thief to unpair lights"
-version: "1.0.25"
+version: "1.0.26"
 slug: "hue-thief"
 init: false
 arch:
@@ -9,8 +9,8 @@ arch:
   - armhf
   - armv7
   - i386
-map:
-  - config:rw
+# map:
+  # - config:rw
 options:
   device: /dev/ttyAMA1
   baud_rate: 115200

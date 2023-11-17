@@ -20,8 +20,8 @@ except ImportError:
     if os.name == "nt":
         async def steal(*args, **kwargs):
             await asyncio.sleep(2)
-            # return set([("abc", "TRANSID", "11")])
-            return set()
+            return set([("abc", 123, 11)])
+            #return set()
 
         async def identify_bulb(*args, **kwargs):
             await asyncio.sleep(2)
@@ -42,14 +42,14 @@ except ImportError:
 class IdentifyBulbRequest:
 # class IdentifyBulbRequest(pydantic.BaseModel):
     address: str
-    transaction_id: str
+    transaction_id: int
     channel: int
 
 @dataclass
 class ResetBulbRequest:
 # class ResetBulbRequest(pydantic.BaseModel):
     address: str
-    transaction_id: str
+    transaction_id: int
     channel: int
 
 
@@ -57,7 +57,7 @@ class ResetBulbRequest:
 class Bulb:
 # class Bulb(pydantic.BaseModel):
     address: str
-    transaction_id: str
+    transaction_id: int
     channel: int
 
 
