@@ -2,7 +2,7 @@
 
 set -eu
 
-echo "Hello, World!"
+echo "Running hue-thief-ha-addon version ${BUILD_VERSION:-local-dev}"
 
 
 # CONFIG_PATH=/data/options.json

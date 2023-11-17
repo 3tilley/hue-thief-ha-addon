@@ -119,7 +119,7 @@ async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_u
         print(f"Sent packet: {res}")
         util.check(res[0], "Unable to send packet")
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
 
         if targets:
             print(f"Found the following targets scanning channel {channel}.\n {targets}")
