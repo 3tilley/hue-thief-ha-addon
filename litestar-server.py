@@ -12,8 +12,6 @@ from litestar.contrib.htmx.response import Reswap, HTMXTemplate
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
 from litestar.template import TemplateConfig
-import yattag
-import pydantic
 
 # Generate skeletons for Windows only
 try:
@@ -48,8 +46,8 @@ class IdentifyBulbRequest:
     channel: int
 
 @dataclass
-class ResetBulbRequest(pydantic.BaseModel):
-# class ResetBulbRequest:
+class ResetBulbRequest:
+# class ResetBulbRequest(pydantic.BaseModel):
     address: str
     transaction_id: str
     channel: int
