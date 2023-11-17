@@ -34,7 +34,7 @@ except ImportError:
             pass
 
         async def prepare_config(*args, **kwargs):
-            return None, None
+            return ("dev", "euifake")
     else:
         raise
 
@@ -73,6 +73,8 @@ class BulbRoutes(Controller):
 
     async def bulbs(self, state: State, channel: int | None) -> BulbsResponse:
         async with self.method_lock:
+            print(f"dev: {type(state.radio_config[0])} - {state.radio_config[0]}, eui64: {type(state.radio_config[1])} - {state.radio_config[1]}")
+            print(f"State: {state}")
             bulbs = await steal(state.radio_config[0], state.radio_config[1], channel, reset_prompt=False, clean_up=False)
             res = BulbsResponse(bulbs=[Bulb(address=bulb[0], transaction_id=bulb[1], channel=bulb[2]) for bulb in bulbs])
             return res
@@ -113,8 +115,12 @@ class BulbRoutes(Controller):
 
 def make_config(device_path, baudrate):
     async def get_db_connection(app: Litestar) -> tuple:
+        print("Preparing config")
         if not getattr(app.state, "radio_config", None):
-            app.state.radio_config = await prepare_config(device_path, baudrate)
+            dev, eui64 = await prepare_config(device_path, baudrate)
+            app.state.radio_config = (dev, eui64)
+        print(f"dev: {type(app.state.radio_config[0])} - {app.state.radio_config[0]}, eui64: {type(app.state.radio_config[1])} - {app.state.radio_config[1]}")
+
         app.state.device_path = device_path
         app.state.baud_rate = baudrate
         return app.state.radio_config
