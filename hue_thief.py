@@ -98,6 +98,7 @@ class Touchlink:
         tl = Touchlink(device_path, baud_rate)
 
         tl.dev, tl.eui64 = await prepare_config(device_path, baud_rate)
+        return tl
 
     async def scan_channel(self, channel):
 
