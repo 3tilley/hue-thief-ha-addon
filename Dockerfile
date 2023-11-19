@@ -12,12 +12,12 @@ RUN pip3 install -r requirements.txt
 #CMD [ "python3", "hue-thief/hue-thief.py", "/dev/ttyUSB1" ]
 
 RUN mkdir /hue-thief
-COPY run.sh /hue-thief/.
-COPY hue_thief.py /hue-thief/.
 COPY interpanZll.py /hue-thief/.
 COPY litestar-server.py /hue-thief/.
 COPY index.html /hue-thief/.
 COPY templates /hue-thief/.
+COPY run.sh /hue-thief/.
+COPY hue_thief.py /hue-thief/.
 
 RUN chmod a+x hue-thief/run.sh
 WORKDIR /hue-thief

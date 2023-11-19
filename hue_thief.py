@@ -259,6 +259,11 @@ async def handle_targets(dev, eu164, targets):
             await send_reset(dev, eui64, transaction_id, channel)
 
 
+async def main(args):
+    # asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=not args.no_reset))
+    tl = await Touchlink.create(args.device, args.baudrate)
+    await tl.blink_routine(args.channel)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Factory reset a Hue light bulb.')
     parser.add_argument('device', type=str, help='Device path, e.g., /dev/ttyUSB0')
@@ -266,7 +271,5 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
     parser.add_argument('--no-reset', action="store_true", help='Whether to offer to reset the bulb')
     args = parser.parse_args()
+    asyncio.run(main(args))
 
-    # asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=not args.no_reset))
-    tl = await Touchlink.create(args.device, args.baudrate)
-    await tl.blink_routine(args.channel)
