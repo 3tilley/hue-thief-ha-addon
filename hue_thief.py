@@ -103,7 +103,7 @@ class Touchlink:
 
     async def scan_channel(self, channel):
 
-        handler = ResponseHandler(self.pcap, channel, targets=None)
+        handler = ResponseHandler(self.dev, self.pcap, channel, targets=None)
         cbid = self.dev.add_callback(handler)
         
         print("Scanning on channel", channel)
