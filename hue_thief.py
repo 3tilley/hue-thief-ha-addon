@@ -146,7 +146,7 @@ class Touchlink:
         await self.dev.mfglibSendPacket(frame)
 
     
-    async def blink_routine(self, channel=None):
+    async def blink_routine(self, channel):
         targets = await self.scan_channel(channel)
         print(f"{targets}")
         for t in targets:
