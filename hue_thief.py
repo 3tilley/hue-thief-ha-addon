@@ -56,6 +56,8 @@ class ResponseHandler:
         self.pcap = pcap
         self.targets = targets if targets else set()
         self.channel = channel
+        self.valid_responses = []
+        self.invalid_responses = []
  
     def handle_incoming(self, frame_name, response):
         #print(f"Response:\n{response}")
@@ -72,10 +74,9 @@ class ResponseHandler:
         try:
             resp = interpanZll.ScanResp.deserialize(data)[0]
         except ValueError:
-            invalid_responses.append(response)
+            self.invalid_responses.append(response)
             return
 
-        transactions_received.append(resp.transactionId)
         resp_dict = resp.__dict__
         valid_responses.append(resp_dict)
 
