@@ -51,7 +51,8 @@ class Target:
     channel: int
     
 class ResponseHandler:
-    def __init__(self, pcap, channel, targets=None):
+    def __init__(self, dev, pcap, channel, targets=None):
+        self.dev = dev
         self.pcap = pcap
         self.targets = targets if targets else set()
         self.channel = channel
@@ -85,7 +86,7 @@ class ResponseHandler:
         self.targets.add(target)
         frame = interpanZll.AckFrame(seq = resp.seq).serialize()
         dump_pcap(self.pcap, frame)
-        asyncio.create_task(dev.mfglibSendPacket(frame))   
+        asyncio.create_task(self.dev.mfglibSendPacket(frame))   
 
 class Touchlink:
 
@@ -119,13 +120,13 @@ class Touchlink:
             transactionId = transaction_id,
         ).serialize()
         dump_pcap(self.pcap, frame)
-        res = await dev.mfglibSendPacket(frame)
+        res = await self.dev.mfglibSendPacket(frame)
         transactions_sent.append(transaction_id)
         print(f"Sent packet: {res}")
         util.check(res[0], "Unable to send packet")
 
         await asyncio.sleep(1)
-        dev.remove_callback(cbid)
+        self.dev.remove_callback(cbid)
         return handler.targets
         
 
