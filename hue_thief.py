@@ -40,7 +40,7 @@ def dump_pcap(pcap, frame):
     ts = time.time()
     ts_sec = int(ts)
     ts_usec = int((ts - ts_sec) * 1_000_000)
-    hdr = pure_pcapy.Pkthdir(ts_sec, ts_usec, len(frame), len(frame))
+    hdr = pure_pcapy.Pkthdr(ts_sec, ts_usec, len(frame), len(frame))
     pcap.dump(hdr, frame)
 
 @dataclass
