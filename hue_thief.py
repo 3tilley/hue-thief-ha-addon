@@ -145,8 +145,9 @@ class Touchlink:
         dump_pcap(self.pcap, frame)
         await self.dev.mfglibSendPacket(frame)
 
+    
     async def blink_routine(self, channel=None):
-        targets = self.scan_channel(channel)
+        targets = await self.scan_channel(channel)
         print(f"{targets}")
         for t in targets:
             await self.identify_bulb(t.ext_address, t.transaction_id, t.channel)
