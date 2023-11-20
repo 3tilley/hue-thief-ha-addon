@@ -17,6 +17,7 @@ COPY litestar-server.py /hue-thief/.
 COPY templates/* /hue-thief/templates/
 COPY run.sh /hue-thief/.
 COPY hue_thief.py /hue-thief/.
+COPY old-hue-thief.py /hue-thief/.
 
 RUN chmod a+x hue-thief/run.sh
 WORKDIR /hue-thief
