@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Generate skeletons for Windows only
 try:
-    from hue_thief import steal, identify_bulb, send_reset, prepare_config, Touchlink, Target
+    from hue_thief import steal, prepare_config, Touchlink, Target
 except ImportError:
     if os.name == "nt":
         @dataclass

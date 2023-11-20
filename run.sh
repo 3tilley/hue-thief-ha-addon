@@ -28,5 +28,5 @@ fi
 #python3 bellows devices
 
 #python3 litestar-server.py ${DEVICE} -b ${BAUD_RATE}
-python3 hue_thief.py ${DEVICE} -b ${BAUD_RATE} --no-reset --channel 11
+python3 litestar-server.py ${DEVICE} -b ${BAUD_RATE}
 

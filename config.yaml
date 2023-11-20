@@ -1,6 +1,6 @@
 name: "Hue thief addon"
 description: "Run hue thief to unpair lights"
-version: "1.0.46"
+version: "1.0.47"
 slug: "hue-thief"
 init: false
 arch:
