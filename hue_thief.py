@@ -122,7 +122,6 @@ class Touchlink:
         ).serialize()
         dump_pcap(self.pcap, frame)
         res = await self.dev.mfglibSendPacket(frame)
-        transactions_sent.append(transaction_id)
         print(f"Sent packet: {res}")
         util.check(res[0], "Unable to send packet")
 
