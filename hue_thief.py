@@ -84,7 +84,7 @@ class ResponseHandler:
         if resp.transactionId != self.transaction_id: # Not for us
             return
 
-        target = Target(resp.extSrc, self.transaction_id, resp.signal_strength, self.channel)
+        target = Target(resp.extSrc, self.transaction_id, resp.rssi, self.channel)
         self.targets.add(target)
         frame = interpanZll.AckFrame(seq = resp.seq).serialize()
         dump_pcap(self.pcap, frame)
