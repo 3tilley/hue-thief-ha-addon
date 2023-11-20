@@ -5,13 +5,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 import os
+from typing import Annotated
 
 import litestar.exceptions
 from litestar import Litestar, get, post, Controller, MediaType
 from litestar.contrib.htmx.request import HTMXRequest
 from litestar.contrib.htmx.response import Reswap, HTMXTemplate
 from litestar.contrib.jinja import JinjaTemplateEngine
+from litestar.config.cors import CORSConfig
 from litestar.datastructures import State
+from litestar.params import Parameter
 from litestar.template import TemplateConfig
 
 import pydantic
@@ -40,7 +43,7 @@ except ImportError:
                 return cls()
 
             async def scan_channel(self, channel, *args, **kwargs):
-                await asyncio.sleep(2)
+                await asyncio.sleep(0.5)
                 return [Target("abc", 123, 11, channel)]
                 #return set()
 
@@ -118,11 +121,8 @@ class BulbRoutes(Controller):
                 logging.debug(f"Scanning on channel {c}")
                 bulbs = await touchlink.scan_channel(c)
                 all_bulbs.extend(bulbs)
-            # print(f"dev: {type(state.radio_config[0])} - {state.radio_config[0]}, eui64: {type(state.radio_config[1])} - {state.radio_config[1]}")
-            print(f"State: {state}")
             await touchlink.close()
 
-            # bulbs = await steal(state.radio_config[0], state.radio_config[1], channel, reset_prompt=False, clean_up=False)
             res = BulbsResponse(bulbs=[Bulb.from_target(bulb) for bulb in all_bulbs])
             return res
 
@@ -192,8 +192,10 @@ async def close_db_connection(app: Litestar) -> None:
 
 
 @get("/", media_type=MediaType.HTML)
-async def index(state: State)  -> str:
+async def index(state: State, ingress_url: Annotated[str | None, Parameter(header="X-Ingress-Path")],)  -> str:
     index = Path(__file__).parent / "index.html"
+
+    print(f"Ingress URL: {ingress_url}")
 
     return index.read_text().replace("{{ fake-jinja-device }}", state.device_path).replace("{{ fake-jinja-baud-rate }}", str(state.baud_rate))
 
@@ -206,6 +208,7 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
     args = parser.parse_args()
 
+    cors_config = CORSConfig(allow_origins=["*"])#, allow_methods=["*"], allow_headers=["*"], allow_credentials=True)
     app = Litestar(debug=True, route_handlers=[BulbRoutes, index],
                    on_startup=[make_config(args.device, args.baudrate)],
                    on_shutdown=[close_db_connection],
@@ -213,6 +216,7 @@ if __name__ == "__main__":
                        directory=Path("templates"),
                        engine=JinjaTemplateEngine,
                    ),
+                   cors_config=cors_config,
                 )
     print(f"Running server with {args.device} at {args.baudrate} baudrate")
 
