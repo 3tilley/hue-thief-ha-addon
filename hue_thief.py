@@ -43,7 +43,7 @@ def dump_pcap(pcap, frame):
     hdr = pure_pcapy.Pkthdr(ts_sec, ts_usec, len(frame), len(frame))
     pcap.dump(hdr, frame)
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Target:
     ext_address: str
     transaction_id: int
@@ -161,7 +161,7 @@ class Touchlink:
             targets = await self.scan_channel(c)
             for t in targets:
                 if t not in targets:
-                    all_targets[t.ext_address] = t
+                    all_targets[t.ext_address] = t#(t.ext_address, t.transaction_id, t.channel)
 
         print(f"{targets}")
         for t in targets:
