@@ -15,6 +15,7 @@ from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.config.cors import CORSConfig
 from litestar.datastructures import State
 from litestar.params import Parameter
+from litestar.response import Template
 from litestar.template import TemplateConfig
 
 import pydantic
@@ -134,9 +135,10 @@ class BulbRoutes(Controller):
             raise litestar.exceptions.HTTPException from e
 
     @get("/bulbs_htmx")
-    async def get_bulbs_htmx(self, state: State, channel: int | None) -> Reswap:
+    async def get_bulbs_htmx(self, state: State, channel: int | None, ingress_url: Annotated[str | None, Parameter(header="X-Ingress-Path")],) -> Reswap:
         bulbs = await self.bulbs(state, channel)
-        template = HTMXTemplate(template_name="bulb_table.html", context={"bulbs": bulbs.bulbs}, re_swap="InnerHTML")#, re_target="bulbs-content")
+        host = ingress_url or ""
+        template = HTMXTemplate(template_name="bulb_table.html", context={"bulbs": bulbs.bulbs, "ingress_host": host}, re_swap="InnerHTML")#, re_target="bulbs-content")
         return template
 
 
@@ -195,9 +197,11 @@ async def close_db_connection(app: Litestar) -> None:
 async def index(state: State, ingress_url: Annotated[str | None, Parameter(header="X-Ingress-Path")],)  -> str:
     index = Path(__file__).parent / "index.html"
 
+    host = ingress_url or ""
     print(f"Ingress URL: {ingress_url}")
 
-    return index.read_text().replace("{{ fake-jinja-device }}", state.device_path).replace("{{ fake-jinja-baud-rate }}", str(state.baud_rate))
+    return Template("index.html", context={"device_path": state.device_path, "baud_rate": state.baud_rate, "ingress_host": host})
+    # return index.read_text()
 
 # Run the LiteStar application
 if __name__ == "__main__":

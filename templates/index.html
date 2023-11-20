@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Hue-thief HA addon</title>
+    <script src="https://unpkg.com/htmx.org@1.9.8" integrity="sha384-rgjA7mptc2ETQqXoYC3/zJvkU7K/aP44Y+z7xQuJiVnB/422P/Ak+F/AqFR7E4Wr" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/client-side-templates.js"></script>
+    <script src="https://unpkg.com/mustache@latest"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+</head>
+<body>
+<main>
+    <h1>Hue Thief</h1>
+    <p>Running with device {{ device_path }} with baud rate {{ baud_rate }}</p>
+    <h1>HTMX version</h1>
+    <button hx-get="{{ ingress_host }}/bulbs_htmx"
+            hx-disabled-elt="this"
+            hx-target="#bulbs-content"
+            placeholder="Loading..."
+    >
+        Get Bulbs
+    </button>
+    <table>
+
+        <thead>
+        <tr>
+            <th>Address</th>
+            <th>Transaction ID</th>
+            <th>Channel</th>
+            <th>Signal Strength</th>
+            <th>Identify</th>
+            <th>Reset</th>
+        </tr>
+        </thead>
+        <tbody id="bulbs-content">    </tbody>
+
+    </table>
+</main>
+</body>
+</html>

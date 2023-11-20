@@ -7,7 +7,7 @@
    <td>{{bulb.channel}}</td>
     <td>{{bulb.signal_strength}}</td>
    <td>
-   <button hx-post="/identify_bulb_htmx"
+   <button hx-post="{{ ingress_host }}/identify_bulb_htmx"
             hx-vals='{"address": "{{bulb.address}}", "transaction_id": "{{bulb.transaction_id}}", "channel": {{bulb.channel}} }'
             hx-disabled-elt="this"
            hx-ext='json-enc'
@@ -16,7 +16,7 @@
     </button>
     </td>
     <td>
-        <button hx-post="/reset_bulb"
+        <button hx-post="{{ ingress_host}}/reset_bulb"
                 hx-disabled-elt="this"
                 hx-vals='{"address": "{{bulb.address}}", "transaction_id": "{{bulb.transaction_id}}", "channel": {{bulb.channel}} }'
                 hx-ext='json-enc'
