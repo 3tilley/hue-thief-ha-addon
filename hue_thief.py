@@ -272,7 +272,8 @@ async def handle_targets(dev, eu164, targets):
 async def main(args):
     # asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=not args.no_reset))
     tl = await Touchlink.create(args.device, args.baudrate)
-    await tl.blink_routine(args.channel)
+    channels = [args.channel] if args.channel else list(range(11, 27))
+    await tl.blink_routine(channels)
     await tl.close()
 
 if __name__ == "__main__":
