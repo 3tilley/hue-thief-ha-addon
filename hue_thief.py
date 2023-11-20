@@ -86,7 +86,7 @@ class ResponseHandler:
             return
 
         signal_strength = resp.rSSICorrection
-        target = Target(resp.extSrc, self.transaction_id, signal_strength, self.channel)
+        target = Target(str(resp.extSrc), self.transaction_id, signal_strength, self.channel)
         self.targets.add(target)
         frame = interpanZll.AckFrame(seq = resp.seq).serialize()
         dump_pcap(self.pcap, frame)
