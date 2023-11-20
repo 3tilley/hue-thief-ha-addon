@@ -89,6 +89,7 @@ class ResponseHandler:
         dump_pcap(self.pcap, frame)
         asyncio.create_task(self.dev.mfglibSendPacket(frame))   
 
+
 class Touchlink:
 
     def __init__(self, device_path, baud_rate):
@@ -105,7 +106,7 @@ class Touchlink:
     async def scan_channel(self, channel):
 
         handler = ResponseHandler(self.dev, self.pcap, channel, targets=None)
-        cbid = self.dev.add_callback(handler)
+        cbid = self.dev.add_callback(handler.handle_incoming)
         
         print("Scanning on channel", channel)
         res = await self.dev.mfglibSetChannel(channel)
