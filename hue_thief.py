@@ -103,6 +103,10 @@ class Touchlink:
         tl.dev, tl.eui64 = await prepare_config(device_path, baud_rate)
         return tl
 
+    async def close(self):
+        await self.dev.mfglibEnd()
+        self.dev.close()
+
     async def scan_channel(self, channel):
 
         handler = ResponseHandler(self.dev, self.pcap, channel, targets=None)
@@ -267,6 +271,7 @@ async def main(args):
     # asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=not args.no_reset))
     tl = await Touchlink.create(args.device, args.baudrate)
     await tl.blink_routine(args.channel)
+    await tl.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Factory reset a Hue light bulb.')
