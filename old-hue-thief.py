@@ -71,7 +71,7 @@ async def steal(device_path, baudrate, scan_channel):
 
 
     for channel in ([scan_channel] if scan_channel else range(11, 27)):
-        print("Scanning on channel",channel)
+        print(f"Scanning on channel: {channel} - {type(channel)}")
         res = await dev.mfglibSetChannel(channel)
         util.check(res[0], "Unable to set channel")
 

@@ -108,13 +108,13 @@ class Touchlink:
         await self.dev.mfglibEnd()
         self.dev.close()
 
-    async def scan_channel(self, channel) -> list[Target]:
+    async def scan_channel(self, channel: int) -> list[Target]:
 
         transaction_id = randint(0, 0xFFFFFFFF)
         handler = ResponseHandler(self.dev, self.pcap, channel, transaction_id, targets=None)
         cbid = self.dev.add_callback(handler.handle_incoming)
         
-        print("Scanning on channel", channel)
+        print(f"Scanning on channel: {channel} - {type(channel)}")
         res = await self.dev.mfglibSetChannel(channel)
         util.check(res[0], "Unable to set channel")
 
@@ -153,8 +153,14 @@ class Touchlink:
         await self.dev.mfglibSendPacket(frame)
 
     
-    async def blink_routine(self, channel):
-        targets = await self.scan_channel(channel)
+    async def blink_routine(self, channels: list[int]):
+        all_targets = {}
+        for c in channels:
+            targets = await self.scan_channel(c)
+            for t in targets:
+                if t not in targets:
+                    all_targets[t.ext_address] = t
+
         print(f"{targets}")
         for t in targets:
             await self.identify_bulb(t.ext_address, t.transaction_id, t.channel)
