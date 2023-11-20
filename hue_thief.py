@@ -79,12 +79,14 @@ class ResponseHandler:
             return
 
         resp_dict = resp.__dict__
+        print(f"Response:\n{resp_dict}")
         self.valid_responses.append(resp_dict)
 
         if resp.transactionId != self.transaction_id: # Not for us
             return
 
-        target = Target(resp.extSrc, self.transaction_id, resp.rssi, self.channel)
+        signal_strength = resp.rssiCorrection
+        target = Target(resp.extSrc, self.transaction_id, signal_strength, self.channel)
         self.targets.add(target)
         frame = interpanZll.AckFrame(seq = resp.seq).serialize()
         dump_pcap(self.pcap, frame)
