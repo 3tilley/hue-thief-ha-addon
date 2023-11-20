@@ -118,7 +118,7 @@ class BulbRoutes(Controller):
                 logging.debug(f"Scanning on channel {c}")
                 bulbs = await touchlink.scan_channel(c)
                 all_bulbs.extend(bulbs)
-            print(f"dev: {type(state.radio_config[0])} - {state.radio_config[0]}, eui64: {type(state.radio_config[1])} - {state.radio_config[1]}")
+            # print(f"dev: {type(state.radio_config[0])} - {state.radio_config[0]}, eui64: {type(state.radio_config[1])} - {state.radio_config[1]}")
             print(f"State: {state}")
             await touchlink.close()
 
@@ -170,10 +170,10 @@ def make_config(device_path, baudrate):
         print("Preparing config")
         app.state.device_path = device_path
         app.state.baud_rate = baudrate
-        if not getattr(app.state, "radio_config", None):
-            dev, eui64 = await prepare_config(device_path, baudrate)
-            app.state.radio_config = (dev, eui64)
-        print(f"dev: {type(app.state.radio_config[0])} - {app.state.radio_config[0]}, eui64: {type(app.state.radio_config[1])} - {app.state.radio_config[1]}")
+        # if not getattr(app.state, "radio_config", None):
+        #     dev, eui64 = await prepare_config(device_path, baudrate)
+        #     app.state.radio_config = (dev, eui64)
+        # print(f"dev: {type(app.state.radio_config[0])} - {app.state.radio_config[0]}, eui64: {type(app.state.radio_config[1])} - {app.state.radio_config[1]}")
 
         app.state.device_path = device_path
         app.state.baud_rate = baudrate
