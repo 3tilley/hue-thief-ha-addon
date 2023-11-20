@@ -51,11 +51,12 @@ class Target:
     channel: int
     
 class ResponseHandler:
-    def __init__(self, dev, pcap, channel, targets=None):
+    def __init__(self, dev, pcap, channel, transaction_id, targets=None):
         self.dev = dev
         self.pcap = pcap
         self.targets = targets if targets else set()
         self.channel = channel
+        self.transaction_id = transaction_id
         self.valid_responses = []
         self.invalid_responses = []
  
@@ -78,12 +79,12 @@ class ResponseHandler:
             return
 
         resp_dict = resp.__dict__
-        valid_responses.append(resp_dict)
+        self.valid_responses.append(resp_dict)
 
-        if resp.transactionId != transaction_id: # Not for us
+        if resp.transactionId != self.transaction_id: # Not for us
             return
 
-        target = Target(resp.extSrc, transaction_id, resp.rssi, self.channel)
+        target = Target(resp.extSrc, self.transaction_id, resp.signal_strength, self.channel)
         self.targets.add(target)
         frame = interpanZll.AckFrame(seq = resp.seq).serialize()
         dump_pcap(self.pcap, frame)
@@ -107,16 +108,16 @@ class Touchlink:
         await self.dev.mfglibEnd()
         self.dev.close()
 
-    async def scan_channel(self, channel):
+    async def scan_channel(self, channel) -> list[Target]:
 
-        handler = ResponseHandler(self.dev, self.pcap, channel, targets=None)
+        transaction_id = randint(0, 0xFFFFFFFF)
+        handler = ResponseHandler(self.dev, self.pcap, channel, transaction_id, targets=None)
         cbid = self.dev.add_callback(handler.handle_incoming)
         
         print("Scanning on channel", channel)
         res = await self.dev.mfglibSetChannel(channel)
         util.check(res[0], "Unable to set channel")
 
-        transaction_id = randint(0, 0xFFFFFFFF)
 
         # https://www.nxp.com/docs/en/user-guide/JN-UG-3091.pdf section 6.8.5
         frame = interpanZll.ScanReq(
@@ -157,7 +158,24 @@ class Touchlink:
         print(f"{targets}")
         for t in targets:
             await self.identify_bulb(t.ext_address, t.transaction_id, t.channel)
-            
+
+    async def send_reset(self, target, transaction_id, channel):
+        res = await self.dev.mfglibSetChannel(channel)
+        util.check(res[0], "Unable to set channel")
+
+        print(f"Factory resetting {target}")
+        frame = interpanZll.FactoryResetReq(
+            seq = 3,
+            srcPan = 0,
+            extSrc = self.eui64,
+            transactionId = transaction_id,
+            extDst = target,
+            frameControl = 0xCC21,
+        ).serialize()
+        dump_pcap(self.pcap, frame)
+        await self.dev.mfglibSendPacket(frame)
+        await asyncio.sleep(1)
+
 
 async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_up=True, config=None):
     if config:
@@ -230,22 +248,6 @@ async def steal(device_path, baudrate, scan_channel, reset_prompt=False, clean_u
 #     except Exception as exc:
 #         print(f"Unable to write errors: {exc}")
 
-async def send_reset(dev, eui64, transaction_id, channel):
-    res = await dev.mfglibSetChannel(channel)
-    util.check(res[0], "Unable to set channel")
-
-    print(f"Factory resetting {target}")
-    frame = interpanZll.FactoryResetReq(
-        seq = 3,
-        srcPan = 0,
-        extSrc = eui64,
-        transactionId = transaction_id,
-        extDst = target,
-        frameControl = 0xCC21,
-    ).serialize()
-    dump_pcap(frame)
-    await dev.mfglibSendPacket(frame)
-    await asyncio.sleep(1)
 
 async def handle_targets(dev, eu164, targets):
     #prompt = Prompt()

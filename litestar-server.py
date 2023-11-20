@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import logging
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,11 +16,43 @@ from litestar.template import TemplateConfig
 
 import pydantic
 
+logger = logging.getLogger(__name__)
+
 # Generate skeletons for Windows only
 try:
-    from hue_thief import steal, identify_bulb, send_reset, prepare_config
+    from hue_thief import steal, identify_bulb, send_reset, prepare_config, Touchlink, Target
 except ImportError:
     if os.name == "nt":
+        @dataclass
+        class Target:
+            ext_address: str
+            transaction_id: int
+            signal_strength: int
+            channel: int
+
+        class Touchlink:
+
+            def __init__(self, *args, **kwargs):
+                pass
+
+            @classmethod
+            async def create(cls, device_path, baud_rate):
+                return cls()
+
+            async def scan_channel(self, channel, *args, **kwargs):
+                await asyncio.sleep(2)
+                return [Target("abc", 123, 11, channel)]
+                #return set()
+
+            async def identify_bulb(self, *args, **kwargs):
+                await asyncio.sleep(2)
+
+            async def send_reset(self, *args, **kwargs):
+                await asyncio.sleep(2)
+
+            async def close(self):
+                pass
+
         async def steal(*args, **kwargs):
             await asyncio.sleep(2)
             return set([("abc", 123, 11)])
@@ -35,6 +68,7 @@ except ImportError:
 
         async def prepare_config(*args, **kwargs):
             return ("dev", "euifake")
+
     else:
         raise
 
@@ -61,6 +95,10 @@ class Bulb(pydantic.BaseModel):
     address: str
     transaction_id: int
     channel: int
+    signal_strength: int
+
+    def from_target(target):
+        return Bulb(address=target.ext_address, transaction_id=target.transaction_id, channel=target.channel, signal_strength=target.signal_strength)
 
 
 @dataclass
@@ -72,11 +110,20 @@ class BulbRoutes(Controller):
     method_lock = asyncio.Lock()
 
     async def bulbs(self, state: State, channel: int | None) -> BulbsResponse:
+        channels = [channel] if channel else range(11, 27)
         async with self.method_lock:
+            touchlink = await Touchlink.create(state.device_path, state.baud_rate)
+            all_bulbs = []
+            for c in channels:
+                logging.debug(f"Scanning on channel {c}")
+                bulbs = await touchlink.scan_channel(c)
+                all_bulbs.extend(bulbs)
             print(f"dev: {type(state.radio_config[0])} - {state.radio_config[0]}, eui64: {type(state.radio_config[1])} - {state.radio_config[1]}")
             print(f"State: {state}")
-            bulbs = await steal(state.radio_config[0], state.radio_config[1], channel, reset_prompt=False, clean_up=False)
-            res = BulbsResponse(bulbs=[Bulb(address=bulb[0], transaction_id=bulb[1], channel=bulb[2]) for bulb in bulbs])
+            await touchlink.close()
+
+            # bulbs = await steal(state.radio_config[0], state.radio_config[1], channel, reset_prompt=False, clean_up=False)
+            res = BulbsResponse(bulbs=[Bulb.from_target(bulb) for bulb in all_bulbs])
             return res
 
     @get("/bulbs")
@@ -89,33 +136,40 @@ class BulbRoutes(Controller):
     @get("/bulbs_htmx")
     async def get_bulbs_htmx(self, state: State, channel: int | None) -> Reswap:
         bulbs = await self.bulbs(state, channel)
-        template = HTMXTemplate(template_name="bulb_table.html", context={"bulbs": bulbs.bulbs}, re_swap="InnerHTML", re_target="bulbs-content")
+        template = HTMXTemplate(template_name="bulb_table.html", context={"bulbs": bulbs.bulbs}, re_swap="InnerHTML")#, re_target="bulbs-content")
         return template
 
 
     @post("/identify_bulb")
     async def identify_bulb(self, state: State, data: IdentifyBulbRequest) -> None:
         async with self.method_lock:
-            result = await identify_bulb(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+            touchlink = await Touchlink.create(state.device_path, state.baud_rate)
+            result = await touchlink.identify_bulb(data.address, data.transaction_id, data.channel)
+            await touchlink.close()
         return litestar.Response(status_code=200, content="Flashing bulb")
 
     @post("/identify_bulb_htmx")
     async def identify_bulb_htmx(self, state: State, data: IdentifyBulbRequest) -> None:
         async with self.method_lock:
-            result = await identify_bulb(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+            touchlink = await Touchlink.create(state.device_path, state.baud_rate)
+            result = await touchlink.identify_bulb(data.address, data.transaction_id, data.channel)
             # result = await identify_bulb(state.radio_config[0], state.radio_config[1], "fdsfds", data.transaction_id, data.channel)
-
+            await touchlink.close()
         return litestar.Response(status_code=200, content="Flashing bulb")
 
     @post("/reset_bulb")
     async def post_reset_bulb(self, state: State, data: ResetBulbRequest) -> None:
         async with self.method_lock:
-            result = await send_reset(state.radio_config[0], state.radio_config[1], data.address, data.transaction_id, data.channel)
+            touchlink = await Touchlink.create(state.device_path, state.baud_rate)
+            result = await touchlink.send_reset(data.address, data.transaction_id, data.channel)
+            await touchlink.close()
         return litestar.Response(status_code=200, content="Bulb reset")
 
 def make_config(device_path, baudrate):
     async def get_db_connection(app: Litestar) -> tuple:
         print("Preparing config")
+        app.state.device_path = device_path
+        app.state.baud_rate = baudrate
         if not getattr(app.state, "radio_config", None):
             dev, eui64 = await prepare_config(device_path, baudrate)
             app.state.radio_config = (dev, eui64)
