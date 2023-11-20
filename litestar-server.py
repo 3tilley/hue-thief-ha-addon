@@ -177,7 +177,7 @@ def make_config(device_path, baudrate):
 
         app.state.device_path = device_path
         app.state.baud_rate = baudrate
-        return app.state.radio_config
+        # return app.state.radio_config
 
     return get_db_connection
 
