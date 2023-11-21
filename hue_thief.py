@@ -1,6 +1,8 @@
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, Field
 import json
+from datetime import datetime
+
 import pure_pcapy
 import time
 import sys
@@ -49,6 +51,7 @@ class Target:
     transaction_id: int
     signal_strength: int
     channel: int
+    identified: datetime = Field(default_factory=datetime.now)
     
 class ResponseHandler:
     def __init__(self, dev, pcap, channel, transaction_id, targets=None):
@@ -167,6 +170,8 @@ class Touchlink:
 
         print(f"{targets}")
         for t in targets:
+            diff_s = (datetime.now() - t.identified).seconds
+            print(f"Sending identify to bulb identified {diff_s} seconds ago")
             await self.identify_bulb(t.ext_address, t.transaction_id, t.channel)
 
     async def send_reset(self, target, transaction_id, channel):

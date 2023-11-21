@@ -1,4 +1,6 @@
 import asyncio
+import os
+
 import pure_pcapy
 import time
 import sys
@@ -89,10 +91,13 @@ async def steal(device_path, baudrate, scan_channel):
         res = await dev.mfglibSendPacket(frame)
         util.check(res[0], "Unable to send packet")
 
-        await asyncio.sleep(10)
+        await asyncio.sleep(0.2)
 
         while len(targets)>0:
             target = targets.pop()
+            delay = int(os.environ.get("ENV_IDENTIFY_DELAY", "1"))
+
+            await asyncio.sleep(delay)
             frame = interpanZll.IdentifyReq(
                 seq = 2,
                 srcPan = 0,
