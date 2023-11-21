@@ -148,7 +148,7 @@ class Touchlink:
             srcPan = 0,
             extSrc = self.eui64,
             transactionId = transaction_id,
-            extDst = target,
+            extDst = bellows.types.named.EmberEUI64.convert(target),
             frameControl = 0xCC21,
         ).serialize()
         dump_pcap(self.pcap, frame)
@@ -177,7 +177,7 @@ class Touchlink:
             srcPan = 0,
             extSrc = self.eui64,
             transactionId = transaction_id,
-            extDst = target,
+            extDst = bellows.types.named.EmberEUI64.convert(target),
             frameControl = 0xCC21,
         ).serialize()
         dump_pcap(self.pcap, frame)
