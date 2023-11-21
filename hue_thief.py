@@ -1,5 +1,5 @@
 import asyncio
-from dataclasses import dataclass, Field
+from dataclasses import dataclass, Field, field
 import json
 from datetime import datetime
 
@@ -51,7 +51,7 @@ class Target:
     transaction_id: int
     signal_strength: int
     channel: int
-    identified: datetime = Field(default_factory=datetime.now)
+    identified: datetime = field(default_factory=datetime.now)
     
 class ResponseHandler:
     def __init__(self, dev, pcap, channel, transaction_id, targets=None):
