@@ -98,6 +98,8 @@ async def steal(device_path, baudrate, scan_channel):
             delay = int(os.environ.get("ENV_IDENTIFY_DELAY", "1"))
 
             await asyncio.sleep(delay)
+            print(f"{transaction_id=} - {type(transaction_id)}")
+            print(f"{target=} - {type(target)}")
             frame = interpanZll.IdentifyReq(
                 seq = 2,
                 srcPan = 0,
@@ -109,7 +111,7 @@ async def steal(device_path, baudrate, scan_channel):
             dump_pcap(frame)
             await dev.mfglibSendPacket(frame)
             #answer = await prompt("Do you want to factory reset the light that just blinked? [y|n] ")
-            ansewr = "n"
+            answer = "n"
 
             if answer.strip().lower() == "y":
                 print("Factory resetting "+str(target))

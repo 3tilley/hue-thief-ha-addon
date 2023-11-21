@@ -148,12 +148,15 @@ class Touchlink:
 
         transaction_id = randint(0, 0xFFFFFFFF)
 
+        dest = bellows.types.named.EmberEUI64.convert(target)
+        print(f"{dest=} - {type(dest)}")
+        print(f"{target=} - {type(target)}")
         frame = interpanZll.IdentifyReq(
             seq = 2,
             srcPan = 0,
             extSrc = self.eui64,
             transactionId = transaction_id,
-            extDst = bellows.types.named.EmberEUI64.convert(target),
+            extDst = dest,
             frameControl = 0xCC21,
         ).serialize()
         dump_pcap(self.pcap, frame)
