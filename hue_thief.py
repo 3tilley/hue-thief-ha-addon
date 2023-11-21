@@ -143,6 +143,8 @@ class Touchlink:
         res = await self.dev.mfglibSetChannel(channel)
         util.check(res[0], "Unable to set channel")
 
+        transaction_id = randint(0, 0xFFFFFFFF)
+
         frame = interpanZll.IdentifyReq(
             seq = 2,
             srcPan = 0,

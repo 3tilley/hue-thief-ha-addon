@@ -89,7 +89,7 @@ async def steal(device_path, baudrate, scan_channel):
         res = await dev.mfglibSendPacket(frame)
         util.check(res[0], "Unable to send packet")
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(10)
 
         while len(targets)>0:
             target = targets.pop()
