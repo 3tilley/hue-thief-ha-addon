@@ -288,7 +288,7 @@ async def handle_targets(dev, eu164, targets):
 
 
 async def main(args):
-    # asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=not args.no_reset))
+    # asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, reset_prompt=args.reset))
     tl = await Touchlink.create(args.device, args.baudrate)
     channels = [args.channel] if args.channel else list(range(11, 27))
     await tl.blink_routine(channels)
@@ -299,7 +299,7 @@ if __name__ == "__main__":
     parser.add_argument('device', type=str, help='Device path, e.g., /dev/ttyUSB0')
     parser.add_argument('-b', '--baudrate', type=int, default=57600, help='Baud rate (default: 57600)')
     parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
-    parser.add_argument('--no-reset', action="store_true", help='Whether to offer to reset the bulb')
+    parser.add_argument('--reset', action="store_true", help='Whether to offer to reset the bulb')
     args = parser.parse_args()
     asyncio.run(main(args))
 

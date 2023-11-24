@@ -26,7 +26,7 @@ class Prompt:
         return (await self.q.get()).rstrip('\n')
 
 
-async def steal(device_path, baudrate, scan_channel):
+async def steal(device_path, baudrate, scan_channel, reset=False):
     dev = await util.setup(device_path, baudrate)
     eui64 = await getattr(dev, 'getEui64')()
     eui64 = bellows.types.named.EmberEUI64(*eui64)
@@ -95,7 +95,7 @@ async def steal(device_path, baudrate, scan_channel):
 
         while len(targets)>0:
             target = targets.pop()
-            delay = int(os.environ.get("ENV_IDENTIFY_DELAY", "1"))
+            delay = int(os.environ.get("ENV_IDENTIFY_DELAY", "1000")) / 1000.0
 
             await asyncio.sleep(delay)
             print(f"{transaction_id=} - {type(transaction_id)}")
@@ -110,10 +110,8 @@ async def steal(device_path, baudrate, scan_channel):
             ).serialize()
             dump_pcap(frame)
             await dev.mfglibSendPacket(frame)
-            #answer = await prompt("Do you want to factory reset the light that just blinked? [y|n] ")
-            answer = "n"
 
-            if answer.strip().lower() == "y":
+            if reset:
                 print("Factory resetting "+str(target))
                 frame = interpanZll.FactoryResetReq(
                     seq = 3,
@@ -138,6 +136,7 @@ parser = argparse.ArgumentParser(description='Factory reset a Hue light bulb.')
 parser.add_argument('device', type=str, help='Device path, e.g., /dev/ttyUSB0')
 parser.add_argument('-b', '--baudrate', type=int, default=57600, help='Baud rate (default: 57600)')
 parser.add_argument('-c', '--channel', type=int, help='Zigbee channel (defaults to scanning 11 up to 26)')
+parser.add_argument('--reset', action="store_true", help='Factory reset the bulbs')
 args = parser.parse_args()
 
-asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel))
+asyncio.get_event_loop().run_until_complete(steal(args.device, args.baudrate, args.channel, args.reset))
