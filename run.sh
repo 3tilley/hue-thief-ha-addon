@@ -17,6 +17,8 @@ RUN_MAIN=$(bashio::config 'run_main' "${ENV_RUN_MAIN:-server}")
 ENV_IDENTIFY_DELAY=$(bashio::config 'identify_delay_ms' "${ENV_IDENTIFY_DELAY:-1}")
 ENV_FORCE_RESET=$(bashio::config 'force_reset' "${ENV_FORCE_RESET:-False}")
 
+echo "Reset flag is ${ENV_FORCE_RESET}"
+
 echo "Testing write permissions"
 test -w ${DEVICE} && echo success || echo failure 
 
